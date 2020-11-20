@@ -75,10 +75,9 @@ dashboard =
 
 card : String -> List (Attribute msg) -> Element msg
 card title attrs =
-    el
+    row
         ([ Background.color (rgb255 255 255 255)
          , Border.rounded 15
-         , Font.alignLeft
          , Font.bold
          , Font.color (rgb255 51 51 51)
          , height <| px 200
@@ -87,7 +86,17 @@ card title attrs =
          ]
             ++ attrs
         )
-        (text <| String.toUpper title)
+        [ el [ alignTop, alignLeft, padding 5 ] (text <| String.toUpper title)
+        , el
+            [ alignTop
+            , alignRight
+            , paddingXY 12 5
+            , Background.color (rgb255 224 228 237)
+            , Border.rounded 15
+            , Font.medium
+            ]
+            (text "COMPARE")
+        ]
 
 
 
