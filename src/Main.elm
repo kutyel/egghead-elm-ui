@@ -5,6 +5,7 @@ import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
+import Element.Input exposing (button)
 import Html exposing (Html)
 
 
@@ -36,6 +37,16 @@ update msg model =
 
 
 ---- VIEW ----
+
+
+white : Color
+white =
+    rgb255 255 255 255
+
+
+blue : Color
+blue =
+    rgb255 25 45 91
 
 
 view : Model -> Html Msg
@@ -73,10 +84,28 @@ dashboard =
         ]
 
 
+btn : Element a
+btn =
+    button
+        [ alignTop
+        , alignRight
+        , paddingXY 13 7
+        , Background.color (rgb255 224 228 237)
+        , Border.rounded 15
+        , Font.medium
+        , Font.letterSpacing 1
+        , Font.size 16
+        , Element.focused
+            [ Background.color blue, Font.color white ]
+        ]
+        -- TODO: change the chevron
+        { label = text "COMPARE ⬇", onPress = Nothing }
+
+
 card : String -> List (Attribute msg) -> Element msg
 card title attrs =
     row
-        ([ Background.color (rgb255 255 255 255)
+        ([ Background.color white
          , Border.rounded 15
          , Font.bold
          , Font.color (rgb255 51 51 51)
@@ -87,15 +116,7 @@ card title attrs =
             ++ attrs
         )
         [ el [ alignTop, alignLeft, padding 5 ] (text <| String.toUpper title)
-        , el
-            [ alignTop
-            , alignRight
-            , paddingXY 12 5
-            , Background.color (rgb255 224 228 237)
-            , Border.rounded 15
-            , Font.medium
-            ]
-            (text "COMPARE")
+        , btn
         ]
 
 
