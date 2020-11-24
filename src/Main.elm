@@ -1,11 +1,12 @@
 module Main exposing (main)
 
 import Browser exposing (sandbox)
+import Dropdown
 import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
-import Element.Input exposing (button)
+import Element.Input as Input
 import Html exposing (Html)
 
 
@@ -14,12 +15,21 @@ import Html exposing (Html)
 
 
 type alias Model =
-    {}
+    { dropdownState : Dropdown.State String
+    , selectedOption : Maybe String
+    }
 
 
 init : Model
 init =
-    {}
+    { dropdownState = Dropdown.init "dropdown"
+    , selectedOption = Nothing
+    }
+
+
+options : List String
+options =
+    List.range 1 10 |> List.map (\item -> "Option " ++ String.fromInt item)
 
 
 
@@ -27,12 +37,26 @@ init =
 
 
 type Msg
-    = NoOp
+    = OptionPicked (Maybe String)
+    | DropdownMsg (Dropdown.Msg String)
+    | ChechboxChecked Bool
 
 
 update : Msg -> Model -> Model
 update msg model =
-    model
+    case msg of
+        ChechboxChecked _ ->
+            model
+
+        OptionPicked option ->
+            { model | selectedOption = option }
+
+        DropdownMsg subMsg ->
+            let
+                ( state, cmd ) =
+                    Dropdown.update dropdownConfig subMsg model.dropdownState options
+            in
+            { model | dropdownState = state }
 
 
 
@@ -44,18 +68,27 @@ white =
     rgb255 255 255 255
 
 
-blue : Color
-blue =
-    rgb255 25 45 91
-
-
 view : Model -> Html Msg
 view model =
-    Element.layout [ Background.color (rgb255 238 241 245) ] dashboard
+    Element.layout [ Background.color (rgb255 238 241 245) ] <| dashboard model
 
 
-dashboard : Element msg
-dashboard =
+dropdownConfig : Dropdown.Config String Msg
+dropdownConfig =
+    let
+        itemToElement selected highlighted item =
+            Input.checkbox []
+                { onChange = ChechboxChecked
+                , icon = Input.defaultCheckbox
+                , checked = False -- TODO: adjust to state here
+                , label = Input.labelRight [] <| text item
+                }
+    in
+    Dropdown.basic DropdownMsg OptionPicked (always btn) itemToElement
+
+
+dashboard : Model -> Element Msg
+dashboard model =
     column
         [ Background.color (rgb255 228 231 235)
         , centerX
@@ -65,7 +98,8 @@ dashboard =
         , width (px 1000)
         ]
         [ row [ width fill ]
-            [ card "overall"
+            [ card "OVERALL"
+                model
                 [ height <| px 350
                 , Border.shadow
                     { offset = ( 0, 3 )
@@ -76,17 +110,17 @@ dashboard =
                 ]
             ]
         , row [ width fill, padding 20 ] [ text "BREAKDOWN" ]
-        , row [ width fill, paddingXY 20 0 ] [ card "category 1" [] ]
+        , row [ width fill, paddingXY 20 0 ] [ card "CATEGORY 1" model [] ]
         , row [ width fill, paddingEach { top = 0, right = 20, bottom = 20, left = 20 }, spacing 15 ]
-            [ column [ width fill ] [ card "category 2" [ height <| px 350 ] ]
-            , column [ width fill ] [ card "category 3" [ height <| px 350 ] ]
+            [ column [ width fill ] [ card "CATEGORY 2" model [ height <| px 350 ] ]
+            , column [ width fill ] [ card "CATEGORY 3" model [ height <| px 350 ] ]
             ]
         ]
 
 
 btn : Element a
 btn =
-    button
+    Input.button
         [ alignTop
         , alignRight
         , paddingXY 13 7
@@ -96,14 +130,19 @@ btn =
         , Font.letterSpacing 1
         , Font.size 16
         , Element.focused
-            [ Background.color blue, Font.color white ]
+            [ Background.color (rgb255 25 45 91), Font.color white ]
         ]
-        -- TODO: change the chevron
-        { label = text "COMPARE ⬇", onPress = Nothing }
+        { label =
+            row []
+                [ text "COMPARE"
+                , el [ Font.size 7 ] (text "  ▲▼")
+                ]
+        , onPress = Nothing
+        }
 
 
-card : String -> List (Attribute msg) -> Element msg
-card title attrs =
+card : String -> Model -> List (Attribute Msg) -> Element Msg
+card title model attrs =
     row
         ([ Background.color white
          , Border.rounded 15
@@ -115,8 +154,8 @@ card title attrs =
          ]
             ++ attrs
         )
-        [ el [ alignTop, alignLeft, padding 5 ] (text <| String.toUpper title)
-        , btn
+        [ el [ alignTop, alignLeft ] (text title)
+        , el [ alignTop, alignRight ] <| Dropdown.view dropdownConfig model.dropdownState options
         ]
 
 
