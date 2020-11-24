@@ -68,23 +68,80 @@ white =
     rgb255 255 255 255
 
 
+lightGrey : Color
+lightGrey =
+    rgb255 155 155 155
+
+
 view : Model -> Html Msg
 view model =
     Element.layout [ Background.color (rgb255 238 241 245) ] <| dashboard model
 
 
+edges : { top : number, right : number, bottom : number, left : number }
+edges =
+    { top = 0
+    , right = 0
+    , bottom = 0
+    , left = 0
+    }
+
+
 dropdownConfig : Dropdown.Config String Msg
 dropdownConfig =
     let
+        arrow icon =
+            el [ Font.size 7, paddingEach { edges | left = 5 } ] icon
+
         itemToElement selected highlighted item =
             Input.checkbox []
                 { onChange = ChechboxChecked
                 , icon = Input.defaultCheckbox
                 , checked = False -- TODO: adjust to state here
-                , label = Input.labelRight [] <| text item
+                , label = Input.labelRight [ paddingEach { edges | left = 7 } ] <| text item
                 }
     in
-    Dropdown.basic DropdownMsg OptionPicked (always btn) itemToElement
+    Dropdown.Config
+        { closeButton = arrow (text "▲")
+        , containerAttributes = []
+        , dropdownMsg = DropdownMsg
+        , dropdownType = Dropdown.Basic
+        , filterPlaceholder = Nothing
+        , itemToElement = itemToElement
+        , itemToPrompt = always btn
+        , itemToText = \_ -> ""
+        , listAttributes =
+            [ Background.color white
+            , Border.rounded 5
+            , Font.medium
+            , padding 20
+            , spacing 20
+            , alignRight
+            , height (px 220)
+            , scrollbarX
+            , Border.shadow
+                { offset = ( 0, 4 )
+                , size = 0.1
+                , blur = 6
+                , color = lightGrey
+                }
+            ]
+        , onSelectMsg = OptionPicked
+        , openButton = arrow (text "▼")
+        , promptElement = el [ width fill ] btn
+        , searchAttributes = []
+        , selectAttributes =
+            [ pointer
+            , paddingXY 13 7
+            , Background.color (rgb255 224 228 237)
+            , Border.rounded 15
+            , Font.medium
+            , Font.letterSpacing 1
+            , Font.size 16
+            , Element.focused
+                [ Background.color (rgb255 25 45 91), Font.color white ]
+            ]
+        }
 
 
 dashboard : Model -> Element Msg
@@ -105,7 +162,7 @@ dashboard model =
                     { offset = ( 0, 3 )
                     , size = 0.1
                     , blur = 5
-                    , color = rgb255 100 100 100
+                    , color = lightGrey
                     }
                 ]
             ]
@@ -123,20 +180,9 @@ btn =
     Input.button
         [ alignTop
         , alignRight
-        , paddingXY 13 7
-        , Background.color (rgb255 224 228 237)
-        , Border.rounded 15
-        , Font.medium
-        , Font.letterSpacing 1
-        , Font.size 16
-        , Element.focused
-            [ Background.color (rgb255 25 45 91), Font.color white ]
+        , Element.focused [ Background.color (rgb255 25 45 91), Font.color white ]
         ]
-        { label =
-            row []
-                [ text "COMPARE"
-                , el [ Font.size 7 ] (text "  ▲▼")
-                ]
+        { label = el [] (text "COMPARE")
         , onPress = Nothing
         }
 
