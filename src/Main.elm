@@ -7,6 +7,7 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
+import Element.Region as Region
 import Html exposing (Html)
 
 
@@ -51,7 +52,11 @@ update msg model =
         OptionPicked option ->
             { model | selectedOption = option }
 
+        DropdownMsg (Dropdown.OnSelect str) ->
+            { model | selectedOption = Just str }
+
         DropdownMsg subMsg ->
+            -- TODO: fix this
             let
                 ( state, cmd ) =
                     Dropdown.update dropdownConfig subMsg model.dropdownState options
@@ -96,7 +101,7 @@ dropdownConfig =
         itemToElement selected highlighted item =
             Input.checkbox []
                 { onChange = ChechboxChecked
-                , icon = Input.defaultCheckbox
+                , icon = Input.defaultCheckbox -- TODO: customise gray checkbox? 🤔
                 , checked = False -- TODO: adjust to state here
                 , label = Input.labelRight [ paddingEach { edges | left = 7 } ] <| text item
                 }
@@ -113,7 +118,6 @@ dropdownConfig =
         , listAttributes =
             [ Background.color white
             , Border.rounded 5
-            , Font.medium
             , padding 20
             , spacing 20
             , alignRight
@@ -135,7 +139,6 @@ dropdownConfig =
             , paddingXY 13 7
             , Background.color (rgb255 224 228 237)
             , Border.rounded 15
-            , Font.medium
             , Font.letterSpacing 1
             , Font.size 16
             , Element.focused
@@ -166,7 +169,18 @@ dashboard model =
                     }
                 ]
             ]
-        , row [ width fill, padding 20 ] [ text "BREAKDOWN" ]
+        , row
+            [ width fill
+            , paddingEach { edges | left = 20, top = 30 }
+            , Region.heading 2
+            , Font.semiBold
+            ]
+            [ text "BREAKDOWN" ]
+        , paragraph
+            [ paddingEach { edges | left = 20 }
+            , Font.color lightGrey
+            ]
+            [ text "Select the options from dropdown menu." ]
         , row [ width fill, paddingXY 20 0 ] [ card "CATEGORY 1" model [] ]
         , row [ width fill, paddingEach { top = 0, right = 20, bottom = 20, left = 20 }, spacing 15 ]
             [ column [ width fill ] [ card "CATEGORY 2" model [ height <| px 350 ] ]
@@ -192,7 +206,6 @@ card title model attrs =
     row
         ([ Background.color white
          , Border.rounded 15
-         , Font.bold
          , Font.color (rgb255 51 51 51)
          , height <| px 200
          , padding 20
@@ -200,7 +213,12 @@ card title model attrs =
          ]
             ++ attrs
         )
-        [ el [ alignTop, alignLeft ] (text title)
+        [ textColumn [ alignTop, alignLeft, width fill, spacing 10 ]
+            [ el [ Region.heading 3, Font.semiBold ] (text title)
+
+            -- we need to use `paragraph` here because `el` or `text` does not wrap by default!!
+            , paragraph [ Font.color lightGrey ] [ text <| Maybe.withDefault "" model.selectedOption ]
+            ]
         , el [ alignTop, alignRight ] <| Dropdown.view dropdownConfig model.dropdownState options
         ]
 
