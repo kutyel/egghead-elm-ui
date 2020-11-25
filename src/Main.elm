@@ -24,17 +24,21 @@ type Menu
 
 
 type alias Model =
-    { open : Maybe Menu
-    , dropdownState : Dropdown.State String
-    , selected : List ( Menu, String )
+    { selected : List ( Menu, String )
+    , overallDropdownState : Dropdown.State String
+    , category1DropdownState : Dropdown.State String
+    , category2DropdownState : Dropdown.State String
+    , category3DropdownState : Dropdown.State String
     }
 
 
 init : Model
 init =
-    { dropdownState = Dropdown.init "dropdown"
-    , selected = []
-    , open = Nothing
+    { selected = []
+    , overallDropdownState = Dropdown.init "overall"
+    , category1DropdownState = Dropdown.init "category1"
+    , category2DropdownState = Dropdown.init "category2"
+    , category3DropdownState = Dropdown.init "category3"
     }
 
 
@@ -43,35 +47,42 @@ options =
     List.range 1 10 |> List.map (\item -> "Option " ++ String.fromInt item)
 
 
+getState : Model -> Menu -> Dropdown.State String
+getState model menu =
+    case menu of
+        Overall ->
+            model.overallDropdownState
+
+        Category1 ->
+            model.category1DropdownState
+
+        Category2 ->
+            model.category2DropdownState
+
+        Category3 ->
+            model.category3DropdownState
+
+
 
 ---- UPDATE ----
 
 
 type Msg
-    = ToggleMenu Menu
-    | OptionPicked Menu (Maybe String)
+    = OptionPicked (Maybe String)
     | ChechboxClicked Menu String Bool
     | DropdownMsg Menu (Dropdown.Msg String)
+    | OnClickOutside
 
 
 update : Msg -> Model -> Model
 update msg model =
     case msg of
-        OptionPicked _ _ ->
-            -- TODO: maybe remove this?
+        OptionPicked _ ->
             model
 
-        ToggleMenu menu ->
-            case model.open of
-                Nothing ->
-                    { model | open = Just menu }
-
-                Just m ->
-                    if m == menu then
-                        { model | open = Nothing }
-
-                    else
-                        { model | open = Just menu }
+        OnClickOutside ->
+            -- TODO: close all dropdowns when click outside!
+            model
 
         ChechboxClicked menu str checked ->
             if List.any ((==) ( menu, str )) model.selected then
@@ -80,23 +91,23 @@ update msg model =
             else
                 { model | selected = ( menu, str ) :: model.selected }
 
-        -- TODO: handle manuall which dropdown should stay open!
-        --
-        -- DropdownMsg menu Dropdown.OnClickPrompt ->
-        --     case model.open of
-        --         Nothing ->
-        --             { model | open = Just menu }
-        --         Just m ->
-        --             if m == menu then
-        --                 { model | open = Nothing }
-        --             else
-        --                 { model | open = Just menu }
         DropdownMsg menu subMsg ->
             let
                 ( state, cmd ) =
-                    Dropdown.update (dropdownConfig menu model) subMsg model.dropdownState options
+                    Dropdown.update (dropdownConfig model menu) subMsg (getState model menu) options
             in
-            { model | dropdownState = state }
+            case menu of
+                Overall ->
+                    { model | overallDropdownState = state }
+
+                Category1 ->
+                    { model | category1DropdownState = state }
+
+                Category2 ->
+                    { model | category2DropdownState = state }
+
+                _ ->
+                    { model | category3DropdownState = state }
 
 
 
@@ -117,14 +128,14 @@ edges =
     }
 
 
-dropdownConfig : Menu -> Model -> Dropdown.Config String Msg
-dropdownConfig menu model =
+dropdownConfig : Model -> Menu -> Dropdown.Config String Msg
+dropdownConfig model menu =
     let
         arrow icon =
             el [ Font.size 7, paddingEach { edges | left = 5 } ] icon
 
         itemToElement selected highlighted item =
-            Input.checkbox []
+            Input.checkbox [ Element.focused [] ]
                 { onChange = ChechboxClicked menu item
                 , icon = Checkbox.grey
                 , checked = List.any ((==) ( menu, item )) model.selected
@@ -158,7 +169,7 @@ dropdownConfig menu model =
                 }
             ]
     in
-    Dropdown.basic (DropdownMsg menu) (OptionPicked menu) (always btn) itemToElement
+    Dropdown.basic (DropdownMsg menu) OptionPicked (always btn) itemToElement
         |> Dropdown.withPromptElement btn
         |> Dropdown.withListAttributes listAttrs
         |> Dropdown.withSelectAttributes selectAttrs
@@ -252,7 +263,8 @@ card title menu model attrs =
                                 |> String.append "Selected: "
                 ]
             ]
-        , el [ alignTop, alignRight ] <| Dropdown.view (dropdownConfig menu model) model.dropdownState options
+        , el [ alignTop, alignRight ] <|
+            Dropdown.view (dropdownConfig model menu) (getState model menu) options
         ]
 
 
