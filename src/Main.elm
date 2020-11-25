@@ -47,16 +47,17 @@ options =
 
 
 type Msg
-    = OptionPicked Menu (Maybe String)
-    | ToggleMenu Menu
-    | ChechboxChecked Bool
+    = ToggleMenu Menu
+    | OptionPicked Menu (Maybe String)
+    | ChechboxClicked Menu String Bool
     | DropdownMsg Menu (Dropdown.Msg String)
 
 
 update : Msg -> Model -> Model
 update msg model =
     case msg of
-        ChechboxChecked _ ->
+        OptionPicked _ _ ->
+            -- TODO: maybe remove this?
             model
 
         ToggleMenu menu ->
@@ -71,19 +72,16 @@ update msg model =
                     else
                         { model | open = Just menu }
 
-        OptionPicked menu option ->
-            case option of
-                Nothing ->
-                    model
+        ChechboxClicked menu str checked ->
+            if List.any ((==) ( menu, str )) model.selected then
+                { model | selected = List.filter ((/=) ( menu, str )) model.selected }
 
-                Just str ->
-                    if List.any ((==) ( menu, str )) model.selected then
-                        { model | selected = List.filter ((/=) ( menu, str )) model.selected }
+            else
+                { model | selected = ( menu, str ) :: model.selected }
 
-                    else
-                        { model | selected = ( menu, str ) :: model.selected }
-
-        -- TODO: DropdownMsg menu Dropdown.OnClickPrompt ->
+        -- TODO: handle manuall which dropdown should stay open!
+        --
+        -- DropdownMsg menu Dropdown.OnClickPrompt ->
         --     case model.open of
         --         Nothing ->
         --             { model | open = Just menu }
@@ -93,10 +91,9 @@ update msg model =
         --             else
         --                 { model | open = Just menu }
         DropdownMsg menu subMsg ->
-            -- TODO: fix this
             let
                 ( state, cmd ) =
-                    Dropdown.update (dropdownConfig menu) subMsg model.dropdownState options
+                    Dropdown.update (dropdownConfig menu model) subMsg model.dropdownState options
             in
             { model | dropdownState = state }
 
@@ -129,17 +126,17 @@ edges =
     }
 
 
-dropdownConfig : Menu -> Dropdown.Config String Msg
-dropdownConfig menu =
+dropdownConfig : Menu -> Model -> Dropdown.Config String Msg
+dropdownConfig menu model =
     let
         arrow icon =
             el [ Font.size 7, paddingEach { edges | left = 5 } ] icon
 
         itemToElement selected highlighted item =
             Input.checkbox []
-                { onChange = ChechboxChecked
-                , icon = Input.defaultCheckbox -- TODO: customise gray checkbox? 🤔
-                , checked = False -- TODO: adjust to state here
+                { onChange = ChechboxClicked menu item
+                , icon = Input.defaultCheckbox -- FIXME: customise gray checkbox? 🤔
+                , checked = List.any ((==) ( menu, item )) model.selected
                 , label = Input.labelRight [ paddingEach { edges | left = 7 } ] <| text item
                 }
 
@@ -264,7 +261,7 @@ card title menu model attrs =
                                 |> String.append "Selected: "
                 ]
             ]
-        , el [ alignTop, alignRight ] <| Dropdown.view (dropdownConfig menu) model.dropdownState options
+        , el [ alignTop, alignRight ] <| Dropdown.view (dropdownConfig menu model) model.dropdownState options
         ]
 
 
