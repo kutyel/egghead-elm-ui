@@ -15,16 +15,25 @@ import Html exposing (Html)
 ---- MODEL ----
 
 
+type Menu
+    = Overall
+    | Category1
+    | Category2
+    | Category3
+
+
 type alias Model =
-    { dropdownState : Dropdown.State String
-    , selectedOption : Maybe String
+    { open : Maybe Menu
+    , dropdownState : Dropdown.State String
+    , selected : List ( Menu, String )
     }
 
 
 init : Model
 init =
     { dropdownState = Dropdown.init "dropdown"
-    , selectedOption = Nothing
+    , selected = []
+    , open = Nothing
     }
 
 
@@ -39,8 +48,9 @@ options =
 
 type Msg
     = OptionPicked (Maybe String)
-    | DropdownMsg (Dropdown.Msg String)
+    | ToggleMenu Menu
     | ChechboxChecked Bool
+    | DropdownMsg Menu (Dropdown.Msg String)
 
 
 update : Msg -> Model -> Model
@@ -49,17 +59,47 @@ update msg model =
         ChechboxChecked _ ->
             model
 
+        ToggleMenu menu ->
+            case model.open of
+                Nothing ->
+                    { model | open = Just menu }
+
+                Just m ->
+                    if m == menu then
+                        { model | open = Nothing }
+
+                    else
+                        { model | open = Just menu }
+
         OptionPicked option ->
-            { model | selectedOption = option }
+            -- TODO: is this even needed?
+            let
+                _ =
+                    Debug.log <| "option clicked: " ++ Maybe.withDefault "" option
+            in
+            model
 
-        DropdownMsg (Dropdown.OnSelect str) ->
-            { model | selectedOption = Just str }
+        DropdownMsg menu (Dropdown.OnSelect str) ->
+            if List.any ((==) ( menu, str )) model.selected then
+                { model | selected = List.filter ((/=) ( menu, str )) model.selected }
 
-        DropdownMsg subMsg ->
+            else
+                { model | selected = ( menu, str ) :: model.selected }
+
+        -- TODO: DropdownMsg menu Dropdown.OnClickPrompt ->
+        --     case model.open of
+        --         Nothing ->
+        --             { model | open = Just menu }
+        --         Just m ->
+        --             if m == menu then
+        --                 { model | open = Nothing }
+        --             else
+        --                 { model | open = Just menu }
+        DropdownMsg menu subMsg ->
             -- TODO: fix this
             let
                 ( state, cmd ) =
-                    Dropdown.update dropdownConfig subMsg model.dropdownState options
+                    Dropdown.update (dropdownConfig menu) subMsg model.dropdownState options
             in
             { model | dropdownState = state }
 
@@ -92,8 +132,8 @@ edges =
     }
 
 
-dropdownConfig : Dropdown.Config String Msg
-dropdownConfig =
+dropdownConfig : Menu -> Dropdown.Config String Msg
+dropdownConfig menu =
     let
         arrow icon =
             el [ Font.size 7, paddingEach { edges | left = 5 } ] icon
@@ -109,7 +149,7 @@ dropdownConfig =
     Dropdown.Config
         { closeButton = arrow (text "▲")
         , containerAttributes = []
-        , dropdownMsg = DropdownMsg
+        , dropdownMsg = DropdownMsg menu
         , dropdownType = Dropdown.Basic
         , filterPlaceholder = Nothing
         , itemToElement = itemToElement
@@ -159,6 +199,7 @@ dashboard model =
         ]
         [ row [ width fill ]
             [ card "OVERALL"
+                Overall
                 model
                 [ height <| px 350
                 , Border.shadow
@@ -181,10 +222,10 @@ dashboard model =
             , Font.color lightGrey
             ]
             [ text "Select the options from dropdown menu." ]
-        , row [ width fill, paddingXY 20 0 ] [ card "CATEGORY 1" model [] ]
+        , row [ width fill, paddingXY 20 0 ] [ card "CATEGORY 1" Category1 model [] ]
         , row [ width fill, paddingEach { top = 0, right = 20, bottom = 20, left = 20 }, spacing 15 ]
-            [ column [ width fill ] [ card "CATEGORY 2" model [ height <| px 350 ] ]
-            , column [ width fill ] [ card "CATEGORY 3" model [ height <| px 350 ] ]
+            [ column [ width fill ] [ card "CATEGORY 2" Category2 model [ height <| px 350 ] ]
+            , column [ width fill ] [ card "CATEGORY 3" Category3 model [ height <| px 350 ] ]
             ]
         ]
 
@@ -201,8 +242,8 @@ btn =
         }
 
 
-card : String -> Model -> List (Attribute Msg) -> Element Msg
-card title model attrs =
+card : String -> Menu -> Model -> List (Attribute Msg) -> Element Msg
+card title menu model attrs =
     row
         ([ Background.color white
          , Border.rounded 15
@@ -216,10 +257,23 @@ card title model attrs =
         [ textColumn [ alignTop, alignLeft, width fill, spacing 10 ]
             [ el [ Region.heading 3, Font.semiBold ] (text title)
 
-            -- we need to use `paragraph` here because `el` or `text` does not wrap by default!!
-            , paragraph [ Font.color lightGrey ] [ text <| Maybe.withDefault "" model.selectedOption ]
+            -- we need to use `paragraph` here because `el` or `text` does not wrap by default!
+            , paragraph
+                [ Font.color lightGrey ]
+                [ text <|
+                    case List.filter (\( m, _ ) -> m == menu) model.selected of
+                        [] ->
+                            ""
+
+                        xs ->
+                            xs
+                                |> List.reverse
+                                |> List.map Tuple.second
+                                |> String.join ", "
+                                |> String.append "Selected: "
+                ]
             ]
-        , el [ alignTop, alignRight ] <| Dropdown.view dropdownConfig model.dropdownState options
+        , el [ alignTop, alignRight ] <| Dropdown.view (dropdownConfig menu) model.dropdownState options
         ]
 
 
