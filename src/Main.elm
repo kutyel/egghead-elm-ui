@@ -1,6 +1,7 @@
 module Main exposing (main)
 
 import Browser exposing (sandbox)
+import Checkbox exposing (lightGrey, white)
 import Dropdown
 import Element exposing (..)
 import Element.Background as Background
@@ -102,16 +103,6 @@ update msg model =
 ---- VIEW ----
 
 
-white : Color
-white =
-    rgb255 255 255 255
-
-
-lightGrey : Color
-lightGrey =
-    rgb255 155 155 155
-
-
 view : Model -> Html Msg
 view model =
     Element.layout [ Background.color (rgb255 238 241 245) ] <| dashboard model
@@ -135,7 +126,7 @@ dropdownConfig menu model =
         itemToElement selected highlighted item =
             Input.checkbox []
                 { onChange = ChechboxClicked menu item
-                , icon = Input.defaultCheckbox -- FIXME: customise gray checkbox? 🤔
+                , icon = Checkbox.grey
                 , checked = List.any ((==) ( menu, item )) model.selected
                 , label = Input.labelRight [ paddingEach { edges | left = 7 } ] <| text item
                 }
