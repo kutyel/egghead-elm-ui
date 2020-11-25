@@ -1,9 +1,10 @@
 module Checkbox exposing (grey, lightGrey, white)
 
-import Element exposing (Color, Element, rgb255)
+import Element exposing (Color, Element, htmlAttribute, rgb255)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
+import Html.Attributes exposing (class)
 
 
 white : Color
@@ -19,7 +20,8 @@ lightGrey =
 grey : Bool -> Element msg
 grey checked =
     Element.el
-        [ Element.width (Element.px 14)
+        [ htmlAttribute <| class "focusable"
+        , Element.width (Element.px 14)
         , Element.height (Element.px 14)
         , Font.color white
         , Element.centerY
