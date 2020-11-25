@@ -47,7 +47,7 @@ options =
 
 
 type Msg
-    = OptionPicked (Maybe String)
+    = OptionPicked Menu (Maybe String)
     | ToggleMenu Menu
     | ChechboxChecked Bool
     | DropdownMsg Menu (Dropdown.Msg String)
@@ -71,20 +71,17 @@ update msg model =
                     else
                         { model | open = Just menu }
 
-        OptionPicked option ->
-            -- TODO: is this even needed?
-            let
-                _ =
-                    Debug.log <| "option clicked: " ++ Maybe.withDefault "" option
-            in
-            model
+        OptionPicked menu option ->
+            case option of
+                Nothing ->
+                    model
 
-        DropdownMsg menu (Dropdown.OnSelect str) ->
-            if List.any ((==) ( menu, str )) model.selected then
-                { model | selected = List.filter ((/=) ( menu, str )) model.selected }
+                Just str ->
+                    if List.any ((==) ( menu, str )) model.selected then
+                        { model | selected = List.filter ((/=) ( menu, str )) model.selected }
 
-            else
-                { model | selected = ( menu, str ) :: model.selected }
+                    else
+                        { model | selected = ( menu, str ) :: model.selected }
 
         -- TODO: DropdownMsg menu Dropdown.OnClickPrompt ->
         --     case model.open of
@@ -145,17 +142,19 @@ dropdownConfig menu =
                 , checked = False -- TODO: adjust to state here
                 , label = Input.labelRight [ paddingEach { edges | left = 7 } ] <| text item
                 }
-    in
-    Dropdown.Config
-        { closeButton = arrow (text "▲")
-        , containerAttributes = []
-        , dropdownMsg = DropdownMsg menu
-        , dropdownType = Dropdown.Basic
-        , filterPlaceholder = Nothing
-        , itemToElement = itemToElement
-        , itemToPrompt = always btn
-        , itemToText = \_ -> ""
-        , listAttributes =
+
+        selectAttrs =
+            [ pointer
+            , paddingXY 13 7
+            , Background.color (rgb255 224 228 237)
+            , Border.rounded 15
+            , Font.letterSpacing 1
+            , Font.size 16
+            , Element.focused
+                [ Background.color (rgb255 25 45 91), Font.color white ]
+            ]
+
+        listAttrs =
             [ Background.color white
             , Border.rounded 5
             , padding 20
@@ -170,25 +169,17 @@ dropdownConfig menu =
                 , color = lightGrey
                 }
             ]
-        , onSelectMsg = OptionPicked
-        , openButton = arrow (text "▼")
-        , promptElement = el [ width fill ] btn
-        , searchAttributes = []
-        , selectAttributes =
-            [ pointer
-            , paddingXY 13 7
-            , Background.color (rgb255 224 228 237)
-            , Border.rounded 15
-            , Font.letterSpacing 1
-            , Font.size 16
-            , Element.focused
-                [ Background.color (rgb255 25 45 91), Font.color white ]
-            ]
-        }
+    in
+    Dropdown.basic (DropdownMsg menu) (OptionPicked menu) (always btn) itemToElement
+        |> Dropdown.withPromptElement btn
+        |> Dropdown.withListAttributes listAttrs
+        |> Dropdown.withSelectAttributes selectAttrs
+        |> Dropdown.withOpenCloseButtons { openButton = arrow (text "▼"), closeButton = arrow (text "▲") }
 
 
 dashboard : Model -> Element Msg
 dashboard model =
+    -- FIXME: make this tiny bit reponsive to add one more lesson to the course! 💪🏼
     column
         [ Background.color (rgb255 228 231 235)
         , centerX
