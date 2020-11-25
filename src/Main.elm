@@ -187,18 +187,19 @@ dashboard : Model -> Element Msg
 dashboard model =
     -- FIXME: make this tiny bit reponsive to add one more lesson to the course! 💪🏼
     column
-        [ Background.color (rgb255 228 231 235)
-        , centerX
+        [ centerX
         , centerY
         , spacing 15
+        , width (px 800)
         , Border.rounded 15
-        , width (px 1000)
+        , Background.color (rgb255 228 231 235)
+        , Font.size 16
         ]
         [ row [ width fill ]
             [ card "OVERALL"
                 Overall
                 model
-                [ height <| px 350
+                [ height <| px 300
                 , Border.shadow
                     { offset = ( 0, 3 )
                     , size = 0.1
@@ -212,17 +213,18 @@ dashboard model =
             , paddingEach { edges | left = 20, top = 30 }
             , Region.heading 2
             , Font.semiBold
+            , Font.size 18
             ]
             [ text "BREAKDOWN" ]
         , paragraph
             [ paddingEach { edges | left = 20 }
             , Font.color lightGrey
             ]
-            [ text "Select the options from dropdown menu." ]
+            [ text "Select the options from the dropdown menus" ]
         , row [ width fill, paddingXY 20 0 ] [ card "CATEGORY 1" Category1 model [] ]
         , row [ width fill, paddingEach { top = 0, right = 20, bottom = 20, left = 20 }, spacing 15 ]
-            [ column [ width fill ] [ card "CATEGORY 2" Category2 model [ height <| px 350 ] ]
-            , column [ width fill ] [ card "CATEGORY 3" Category3 model [ height <| px 350 ] ]
+            [ column [ width fill ] [ card "CATEGORY 2" Category2 model [ height <| px 300 ] ]
+            , column [ width fill ] [ card "CATEGORY 3" Category3 model [ height <| px 300 ] ]
             ]
         ]
 
@@ -252,7 +254,7 @@ card title menu model attrs =
             ++ attrs
         )
         [ textColumn [ alignTop, alignLeft, width fill, spacing 10 ]
-            [ el [ Region.heading 3, Font.semiBold ] (text title)
+            [ el [ Region.heading 3, Font.semiBold, Font.size 18 ] (text title)
 
             -- we need to use `paragraph` here because `el` or `text` does not wrap by default!
             , paragraph

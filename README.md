@@ -1,5 +1,14 @@
 # Elm UI Dashboard
 
-![dashboard example](https://www.notion.so/image/https%3A%2F%2Fs3-us-west-2.amazonaws.com%2Fsecure.notion-static.com%2Fc89e4905-712e-4bfe-ae07-82f51118609b%2FDropdown_Menu.png?table=block&id=bea476bd-116e-42ce-b079-9978ba71f71c&width=2880&userId=cac4b0a2-e7b7-4f19-80c0-d9914fc44c32&cache=v2)
+![dashboard example](preview.png)
 
 - [elm-ui](https://package.elm-lang.org/packages/mdgriffith/elm-ui/1.1.8/)
+
+## Interaction requirements
+
+- [x] There are 4 dropdown menus in the page one for each of the sections (the four sections are called: overall, category 1, category 2, and category 3)
+- [x] Each dropdown has a list of options (~10), each of which can be selected and de-selected through a checkbox
+- [x] Each dropdown can be opened by clicking on it
+- [ ] Clicking anywhere outside of the dropdown should close it
+- [ ] Selecting/deselecting a checkbox should not close the dropdown
+- [x] Selected options should show as text in the respective section
