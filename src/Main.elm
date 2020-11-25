@@ -1,6 +1,6 @@
 module Main exposing (main)
 
-import Browser exposing (sandbox)
+import Browser exposing (element)
 import Checkbox exposing (lightGrey, white)
 import Dropdown
 import Element exposing (..)
@@ -32,14 +32,16 @@ type alias Model =
     }
 
 
-init : Model
-init =
-    { selected = []
-    , overallDropdownState = Dropdown.init "overall"
-    , category1DropdownState = Dropdown.init "category1"
-    , category2DropdownState = Dropdown.init "category2"
-    , category3DropdownState = Dropdown.init "category3"
-    }
+init : () -> ( Model, Cmd Msg )
+init _ =
+    ( { selected = []
+      , overallDropdownState = Dropdown.init "overall"
+      , category1DropdownState = Dropdown.init "category1"
+      , category2DropdownState = Dropdown.init "category2"
+      , category3DropdownState = Dropdown.init "category3"
+      }
+    , Cmd.none
+    )
 
 
 options : List String
@@ -68,28 +70,33 @@ getState model menu =
 
 
 type Msg
-    = OptionPicked (Maybe String)
-    | ChechboxClicked Menu String Bool
-    | DropdownMsg Menu (Dropdown.Msg String)
+    = NoOp Bool
     | OnClickOutside
+    | OptionPicked Menu (Maybe String)
+    | DropdownMsg Menu (Dropdown.Msg String)
 
 
-update : Msg -> Model -> Model
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        OptionPicked _ ->
-            model
+        NoOp _ ->
+            ( model, Cmd.none )
+
+        OptionPicked menu str ->
+            case str of
+                Nothing ->
+                    ( model, Cmd.none )
+
+                Just option ->
+                    if List.any ((==) ( menu, option )) model.selected then
+                        ( { model | selected = List.filter ((/=) ( menu, option )) model.selected }, Cmd.none )
+
+                    else
+                        ( { model | selected = ( menu, option ) :: model.selected }, Cmd.none )
 
         OnClickOutside ->
             -- TODO: close all dropdowns when click outside!
-            model
-
-        ChechboxClicked menu str checked ->
-            if List.any ((==) ( menu, str )) model.selected then
-                { model | selected = List.filter ((/=) ( menu, str )) model.selected }
-
-            else
-                { model | selected = ( menu, str ) :: model.selected }
+            ( model, Cmd.none )
 
         DropdownMsg menu subMsg ->
             let
@@ -98,16 +105,16 @@ update msg model =
             in
             case menu of
                 Overall ->
-                    { model | overallDropdownState = state }
+                    ( { model | overallDropdownState = state }, cmd )
 
                 Category1 ->
-                    { model | category1DropdownState = state }
+                    ( { model | category1DropdownState = state }, cmd )
 
                 Category2 ->
-                    { model | category2DropdownState = state }
+                    ( { model | category2DropdownState = state }, cmd )
 
-                _ ->
-                    { model | category3DropdownState = state }
+                Category3 ->
+                    ( { model | category3DropdownState = state }, cmd )
 
 
 
@@ -136,7 +143,7 @@ dropdownConfig model menu =
 
         itemToElement selected highlighted item =
             Input.checkbox [ Element.focused [] ]
-                { onChange = ChechboxClicked menu item
+                { onChange = NoOp
                 , icon = Checkbox.grey
                 , checked = List.any ((==) ( menu, item )) model.selected
                 , label = Input.labelRight [ paddingEach { edges | left = 7 } ] <| text item
@@ -169,7 +176,7 @@ dropdownConfig model menu =
                 }
             ]
     in
-    Dropdown.basic (DropdownMsg menu) OptionPicked (always btn) itemToElement
+    Dropdown.basic (DropdownMsg menu) (OptionPicked menu) (always btn) itemToElement
         |> Dropdown.withPromptElement btn
         |> Dropdown.withListAttributes listAttrs
         |> Dropdown.withSelectAttributes selectAttrs
@@ -274,4 +281,4 @@ card title menu model attrs =
 
 main : Program () Model Msg
 main =
-    sandbox { view = view, init = init, update = update }
+    element { view = view, init = init, update = update, subscriptions = always Sub.none }
