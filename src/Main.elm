@@ -25,9 +25,7 @@ type Menu
 
 
 type alias Model =
-    { height : Int
-    , width : Int
-    , device : Device
+    { device : Device
     , selected : List ( Menu, String )
     , overallDropdownState : Dropdown.State String
     , category1DropdownState : Dropdown.State String
@@ -37,10 +35,8 @@ type alias Model =
 
 
 init : ( Int, Int ) -> ( Model, Cmd Msg )
-init ( height, width ) =
-    ( { height = height
-      , width = width
-      , device = Device Desktop Landscape
+init ( h, w ) =
+    ( { device = classifyDevice { height = h, width = w }
       , selected = []
       , overallDropdownState = Dropdown.init "overall"
       , category1DropdownState = Dropdown.init "category1"
@@ -91,7 +87,7 @@ update msg model =
             ( model, Cmd.none )
 
         ResizedApp w h ->
-            ( { model | height = h, width = w, device = classifyDevice { height = h, width = w } }, Cmd.none )
+            ( { model | device = classifyDevice { height = h, width = w } }, Cmd.none )
 
         OptionPicked menu str ->
             case str of
@@ -197,6 +193,14 @@ dropdownConfig model menu =
 dashboard : Model -> Element Msg
 dashboard model =
     let
+        attrs =
+            [ centerX
+            , centerY
+            , spacing 15
+            , Border.rounded 15
+            , Background.color dashboardColor
+            ]
+
         overall =
             row [ width fill ]
                 [ card "OVERALL"
@@ -230,13 +234,7 @@ dashboard model =
     in
     case model.device.class of
         Phone ->
-            column
-                [ centerX
-                , centerY
-                , spacing 15
-                , Border.rounded 15
-                , Background.color dashboardColor
-                ]
+            column attrs
                 [ overall
                 , breakdown
                 , subtitle
@@ -246,15 +244,7 @@ dashboard model =
                 ]
 
         _ ->
-            column
-                [ centerX
-                , centerY
-                , spacing 15
-                , width (px 800)
-                , Border.rounded 15
-                , Background.color dashboardColor
-                , Font.size 16
-                ]
+            column (attrs ++ [ width (px 800), Font.size 16 ])
                 [ overall
                 , breakdown
                 , subtitle
@@ -301,11 +291,7 @@ card title menu model attrs =
                             ""
 
                         xs ->
-                            xs
-                                |> List.reverse
-                                |> List.map Tuple.second
-                                |> String.join ", "
-                                |> String.append "Selected: "
+                            xs |> List.reverse |> List.map Tuple.second |> String.join ", " |> String.append "Selected: "
                 ]
             ]
         , el [ alignTop, alignRight ] <|
