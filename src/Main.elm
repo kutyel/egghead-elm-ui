@@ -1,7 +1,8 @@
 module Main exposing (main)
 
 import Browser exposing (element)
-import Checkbox exposing (lightGrey, white)
+import Browser.Events exposing (onResize)
+import Checkbox exposing (dashboardColor, lightGrey, white)
 import Dropdown
 import Element exposing (..)
 import Element.Background as Background
@@ -24,7 +25,10 @@ type Menu
 
 
 type alias Model =
-    { selected : List ( Menu, String )
+    { height : Int
+    , width : Int
+    , device : Device
+    , selected : List ( Menu, String )
     , overallDropdownState : Dropdown.State String
     , category1DropdownState : Dropdown.State String
     , category2DropdownState : Dropdown.State String
@@ -32,9 +36,12 @@ type alias Model =
     }
 
 
-init : () -> ( Model, Cmd Msg )
-init _ =
-    ( { selected = []
+init : ( Int, Int ) -> ( Model, Cmd Msg )
+init ( height, width ) =
+    ( { height = height
+      , width = width
+      , device = Device Desktop Landscape
+      , selected = []
       , overallDropdownState = Dropdown.init "overall"
       , category1DropdownState = Dropdown.init "category1"
       , category2DropdownState = Dropdown.init "category2"
@@ -72,6 +79,7 @@ getState model menu =
 type Msg
     = NoOp Bool
     | OnClickOutside
+    | ResizedApp Int Int
     | OptionPicked Menu (Maybe String)
     | DropdownMsg Menu (Dropdown.Msg String)
 
@@ -81,6 +89,9 @@ update msg model =
     case msg of
         NoOp _ ->
             ( model, Cmd.none )
+
+        ResizedApp w h ->
+            ( { model | height = h, width = w, device = classifyDevice { height = h, width = w } }, Cmd.none )
 
         OptionPicked menu str ->
             case str of
@@ -185,48 +196,74 @@ dropdownConfig model menu =
 
 dashboard : Model -> Element Msg
 dashboard model =
-    -- FIXME: make this tiny bit reponsive to add one more lesson to the course! 💪🏼
-    column
-        [ centerX
-        , centerY
-        , spacing 15
-        , width (px 800)
-        , Border.rounded 15
-        , Background.color (rgb255 228 231 235)
-        , Font.size 16
-        ]
-        [ row [ width fill ]
-            [ card "OVERALL"
-                Overall
-                model
-                [ height <| px 300
-                , Border.shadow
-                    { offset = ( 0, 3 )
-                    , size = 0.1
-                    , blur = 5
-                    , color = lightGrey
-                    }
+    let
+        overall =
+            row [ width fill ]
+                [ card "OVERALL"
+                    Overall
+                    model
+                    [ height <| px 300, Border.shadow { offset = ( 0, 3 ), size = 0.1, blur = 5, color = lightGrey } ]
                 ]
-            ]
-        , row
-            [ width fill
-            , paddingEach { edges | left = 20, top = 30 }
-            , Region.heading 2
-            , Font.semiBold
-            , Font.size 18
-            ]
-            [ text "BREAKDOWN" ]
-        , paragraph
-            [ paddingEach { edges | left = 20 }
-            , Font.color lightGrey
-            ]
-            [ text "Select the options from the dropdown menus" ]
-        , row [ width fill, paddingXY 20 0 ] [ card "CATEGORY 1" Category1 model [] ]
-        , row [ width fill, paddingEach { top = 0, right = 20, bottom = 20, left = 20 }, spacing 15 ]
-            [ column [ width fill ] [ card "CATEGORY 2" Category2 model [ height <| px 300 ] ]
-            , column [ width fill ] [ card "CATEGORY 3" Category3 model [ height <| px 300 ] ]
-            ]
-        ]
+
+        breakdown =
+            row
+                [ width fill
+                , paddingEach { edges | left = 20, top = 30 }
+                , Region.heading 2
+                , Font.semiBold
+                , Font.size 18
+                ]
+                [ text "BREAKDOWN" ]
+
+        subtitle =
+            paragraph [ paddingEach { edges | left = 20 }, Font.color lightGrey ]
+                [ text "Select the options from the dropdown menus" ]
+
+        category1 =
+            card "CATEGORY 1" Category1 model []
+
+        category2 =
+            card "CATEGORY 2" Category2 model [ height <| px 300 ]
+
+        category3 =
+            card "CATEGORY 3" Category3 model [ height <| px 300 ]
+    in
+    case model.device.class of
+        Phone ->
+            column
+                [ centerX
+                , centerY
+                , spacing 15
+                , Border.rounded 15
+                , Background.color dashboardColor
+                ]
+                [ overall
+                , breakdown
+                , subtitle
+                , category1
+                , category2
+                , category3
+                ]
+
+        _ ->
+            column
+                [ centerX
+                , centerY
+                , spacing 15
+                , width (px 800)
+                , Border.rounded 15
+                , Background.color dashboardColor
+                , Font.size 16
+                ]
+                [ overall
+                , breakdown
+                , subtitle
+                , row [ width fill, paddingXY 20 0 ] [ category1 ]
+                , row [ width fill, paddingEach { top = 0, right = 20, bottom = 20, left = 20 }, spacing 15 ]
+                    [ column [ width fill ] [ category2 ]
+                    , column [ width fill ] [ category3 ]
+                    ]
+                ]
 
 
 btn : Element a
@@ -255,9 +292,8 @@ card title menu model attrs =
         )
         [ textColumn [ alignTop, alignLeft, width fill, spacing 10 ]
             [ el [ Region.heading 3, Font.semiBold, Font.size 18 ] (text title)
-
-            -- we need to use `paragraph` here because `el` or `text` does not wrap by default!
             , paragraph
+                -- we need to use `paragraph` here because `el` or `text` does not wrap by default!
                 [ Font.color lightGrey ]
                 [ text <|
                     case List.filter (\( m, _ ) -> m == menu) model.selected of
@@ -281,6 +317,11 @@ card title menu model attrs =
 ---- PROGRAM ----
 
 
-main : Program () Model Msg
+main : Program ( Int, Int ) Model Msg
 main =
-    element { view = view, init = init, update = update, subscriptions = always Sub.none }
+    element
+        { view = view
+        , init = init
+        , update = update
+        , subscriptions = always <| onResize ResizedApp
+        }

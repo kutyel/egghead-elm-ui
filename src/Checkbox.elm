@@ -1,4 +1,4 @@
-module Checkbox exposing (grey, lightGrey, white)
+module Checkbox exposing (dashboardColor, grey, lightGrey, white)
 
 import Element exposing (Color, Element, htmlAttribute, rgb255)
 import Element.Background as Background
@@ -15,6 +15,11 @@ white =
 lightGrey : Color
 lightGrey =
     rgb255 155 155 155
+
+
+dashboardColor : Color
+dashboardColor =
+    rgb255 228 231 235
 
 
 grey : Bool -> Element msg

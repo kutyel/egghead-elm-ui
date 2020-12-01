@@ -12,3 +12,4 @@
 - [ ] Clicking anywhere outside of the dropdown should close it
 - [ ] Selecting/deselecting a checkbox should not close the dropdown
 - [x] Selected options should show as text in the respective section
+- [x] Manually control responsive with `classifyDevice`! 📲
