@@ -74,7 +74,6 @@ getState model menu =
 
 type Msg
     = NoOp Bool
-    | OnClickOutside
     | ResizedApp Int Int
     | OptionPicked Menu (Maybe String)
     | DropdownMsg Menu (Dropdown.Msg String)
@@ -100,10 +99,6 @@ update msg model =
 
                     else
                         ( { model | selected = ( menu, option ) :: model.selected }, Cmd.none )
-
-        OnClickOutside ->
-            -- TODO: close all dropdowns when click outside!
-            ( model, Cmd.none )
 
         DropdownMsg menu subMsg ->
             let
@@ -183,7 +178,7 @@ dropdownConfig model menu =
                 }
             ]
     in
-    Dropdown.basic (DropdownMsg menu) (OptionPicked menu) (always btn) itemToElement
+    Dropdown.multi (DropdownMsg menu) (OptionPicked menu) (always btn) itemToElement
         |> Dropdown.withPromptElement btn
         |> Dropdown.withListAttributes listAttrs
         |> Dropdown.withSelectAttributes selectAttrs
@@ -300,6 +295,21 @@ card title menu model attrs =
 
 
 
+---- SUBSCRIPTIONS ----
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.batch
+        [ onResize ResizedApp
+        , Dropdown.onOutsideClick model.overallDropdownState (DropdownMsg Overall)
+        , Dropdown.onOutsideClick model.category1DropdownState (DropdownMsg Category1)
+        , Dropdown.onOutsideClick model.category2DropdownState (DropdownMsg Category2)
+        , Dropdown.onOutsideClick model.category3DropdownState (DropdownMsg Category3)
+        ]
+
+
+
 ---- PROGRAM ----
 
 
@@ -309,5 +319,5 @@ main =
         { view = view
         , init = init
         , update = update
-        , subscriptions = always <| onResize ResizedApp
+        , subscriptions = subscriptions
         }
