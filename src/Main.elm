@@ -88,14 +88,6 @@ update msg model =
         ResizedApp w h ->
             ( { model | device = classifyDevice { height = h, width = w } }, Cmd.none )
 
-        OptionPicked menu [] ->
-            ( { model
-                | selected =
-                    List.filter (\( m, _ ) -> m /= menu) model.selected
-              }
-            , Cmd.none
-            )
-
         OptionPicked menu selections ->
             let
                 subset =
