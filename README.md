@@ -4,6 +4,13 @@
 
 - [elm-ui](https://package.elm-lang.org/packages/mdgriffith/elm-ui/1.1.8/)
 
+## Running the app
+
+```sh
+npm install -g create-elm-app
+elm-app start
+```
+
 ## Interaction requirements
 
 - [x] There are 4 dropdown menus in the page one for each of the sections (the four sections are called: overall, category 1, category 2, and category 3)

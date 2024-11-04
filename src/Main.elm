@@ -75,7 +75,7 @@ getState model menu =
 type Msg
     = NoOp Bool
     | ResizedApp Int Int
-    | OptionPicked Menu (Maybe String)
+    | OptionPicked Menu (List String)
     | DropdownMsg Menu (Dropdown.Msg String)
 
 
@@ -88,34 +88,56 @@ update msg model =
         ResizedApp w h ->
             ( { model | device = classifyDevice { height = h, width = w } }, Cmd.none )
 
-        OptionPicked menu str ->
-            case str of
-                Nothing ->
-                    ( model, Cmd.none )
+        OptionPicked menu [] ->
+            ( { model
+                | selected =
+                    List.filter (\( m, _ ) -> m /= menu) model.selected
+              }
+            , Cmd.none
+            )
 
-                Just option ->
-                    if List.any ((==) ( menu, option )) model.selected then
-                        ( { model | selected = List.filter ((/=) ( menu, option )) model.selected }, Cmd.none )
-
-                    else
-                        ( { model | selected = ( menu, option ) :: model.selected }, Cmd.none )
+        OptionPicked menu selections ->
+            let
+                subset =
+                    List.filter (\( m, _ ) -> m /= menu) model.selected
+            in
+            ( { model
+                | selected =
+                    selections
+                        |> List.map (\option -> ( menu, option ))
+                        |> List.append subset
+              }
+            , Cmd.none
+            )
 
         DropdownMsg menu subMsg ->
-            let
-                ( state, cmd ) =
-                    Dropdown.update (dropdownConfig model menu) subMsg (getState model menu) options
-            in
             case menu of
                 Overall ->
+                    let
+                        ( state, cmd ) =
+                            Dropdown.update (dropdownConfig model menu) subMsg model model.overallDropdownState
+                    in
                     ( { model | overallDropdownState = state }, cmd )
 
                 Category1 ->
+                    let
+                        ( state, cmd ) =
+                            Dropdown.update (dropdownConfig model menu) subMsg model model.category1DropdownState
+                    in
                     ( { model | category1DropdownState = state }, cmd )
 
                 Category2 ->
+                    let
+                        ( state, cmd ) =
+                            Dropdown.update (dropdownConfig model menu) subMsg model model.category2DropdownState
+                    in
                     ( { model | category2DropdownState = state }, cmd )
 
                 Category3 ->
+                    let
+                        ( state, cmd ) =
+                            Dropdown.update (dropdownConfig model menu) subMsg model model.category3DropdownState
+                    in
                     ( { model | category3DropdownState = state }, cmd )
 
 
@@ -137,13 +159,18 @@ edges =
     }
 
 
-dropdownConfig : Model -> Menu -> Dropdown.Config String Msg
+dropdownConfig : Model -> Menu -> Dropdown.Config String Msg Model
 dropdownConfig model menu =
     let
         arrow icon =
             el [ Font.size 7, paddingEach { edges | left = 5 } ] icon
 
-        itemToElement selected highlighted item =
+        selectionFromModel m =
+            m.selected
+                |> List.filter (\( menuOption, _ ) -> menuOption == menu)
+                |> List.map Tuple.second
+
+        itemToElement _ _ item =
             Input.checkbox [ Element.focused [] ]
                 { onChange = NoOp
                 , icon = Checkbox.grey
@@ -178,7 +205,14 @@ dropdownConfig model menu =
                 }
             ]
     in
-    Dropdown.multi (DropdownMsg menu) (OptionPicked menu) (always btn) itemToElement
+    Dropdown.multi
+        { itemsFromModel = always options
+        , selectionFromModel = selectionFromModel
+        , dropdownMsg = DropdownMsg menu
+        , onSelectMsg = OptionPicked menu
+        , itemsToPrompt = always btn
+        , itemToElement = itemToElement
+        }
         |> Dropdown.withPromptElement btn
         |> Dropdown.withListAttributes listAttrs
         |> Dropdown.withSelectAttributes selectAttrs
@@ -290,7 +324,10 @@ card title menu model attrs =
                 ]
             ]
         , el [ alignTop, alignRight ] <|
-            Dropdown.view (dropdownConfig model menu) (getState model menu) options
+            Dropdown.view
+                (dropdownConfig model menu)
+                model
+                (getState model menu)
         ]
 
 
