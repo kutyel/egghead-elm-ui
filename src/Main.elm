@@ -103,33 +103,21 @@ update msg model =
             )
 
         DropdownMsg menu subMsg ->
+            let
+                ( state, cmd ) =
+                    Dropdown.update (dropdownConfig model menu) subMsg model (getState model menu)
+            in
             case menu of
                 Overall ->
-                    let
-                        ( state, cmd ) =
-                            Dropdown.update (dropdownConfig model menu) subMsg model model.overallDropdownState
-                    in
                     ( { model | overallDropdownState = state }, cmd )
 
                 Category1 ->
-                    let
-                        ( state, cmd ) =
-                            Dropdown.update (dropdownConfig model menu) subMsg model model.category1DropdownState
-                    in
                     ( { model | category1DropdownState = state }, cmd )
 
                 Category2 ->
-                    let
-                        ( state, cmd ) =
-                            Dropdown.update (dropdownConfig model menu) subMsg model model.category2DropdownState
-                    in
                     ( { model | category2DropdownState = state }, cmd )
 
                 Category3 ->
-                    let
-                        ( state, cmd ) =
-                            Dropdown.update (dropdownConfig model menu) subMsg model model.category3DropdownState
-                    in
                     ( { model | category3DropdownState = state }, cmd )
 
 
@@ -166,7 +154,7 @@ dropdownConfig model menu =
             Input.checkbox [ Element.focused [] ]
                 { onChange = NoOp
                 , icon = Checkbox.grey
-                , checked = List.any ((==) ( menu, item )) model.selected
+                , checked = List.member ( menu, item ) model.selected
                 , label = Input.labelRight [ paddingEach { edges | left = 7 } ] <| text item
                 }
 
